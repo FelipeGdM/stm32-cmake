@@ -299,6 +299,8 @@ message(STATUS "Search for HAL families: ${HAL_FIND_COMPONENTS_FAMILIES}")
 message(STATUS "Search for HAL drivers: ${HAL_FIND_COMPONENTS_DRIVERS}")
 message(STATUS "Search for HAL LL drivers: ${HAL_FIND_COMPONENTS_DRIVERS_LL}")
 
+set(HAL_EXPORTED_COMPONENTS)
+
 foreach(COMP ${HAL_FIND_COMPONENTS_FAMILIES})
     string(TOUPPER ${COMP} COMP_U)
     
@@ -407,6 +409,7 @@ foreach(COMP ${HAL_FIND_COMPONENTS_FAMILIES})
             add_library(HAL::STM32::${FAMILY}${CORE_C}::${DRV} INTERFACE IMPORTED)
             target_link_libraries(HAL::STM32::${FAMILY}${CORE_C}::${DRV} INTERFACE HAL::STM32::${FAMILY}${CORE_C})
             target_sources(HAL::STM32::${FAMILY}${CORE_C}::${DRV} INTERFACE "${HAL_${FAMILY}${CORE_U}_${DRV}_SOURCE}")
+            list(APPEND HAL_EXPORTED_COMPONENTS ${DRV})
         endif()
                 
         if(HAL_${FAMILY}${CORE_U}_${DRV}_SOURCE AND (${DRV_L} IN_LIST HAL_EX_DRIVERS_${FAMILY}))
@@ -425,6 +428,7 @@ foreach(COMP ${HAL_FIND_COMPONENTS_FAMILIES})
                 add_library(HAL::STM32::${FAMILY}${CORE_C}::${DRV}Ex INTERFACE IMPORTED)
                 target_link_libraries(HAL::STM32::${FAMILY}${CORE_C}::${DRV}Ex INTERFACE HAL::STM32::${FAMILY}${CORE_C}::${DRV})
                 target_sources(HAL::STM32::${FAMILY}${CORE_C}::${DRV}Ex INTERFACE "${HAL_${FAMILY}${CORE_U}_${DRV}_EX_SOURCE}")
+                list(APPEND HAL_EXPORTED_COMPONENTS ${DRV}Ex)
             endif()
         endif()
     endforeach()
@@ -456,12 +460,21 @@ foreach(COMP ${HAL_FIND_COMPONENTS_FAMILIES})
             add_library(HAL::STM32::${FAMILY}${CORE_C}::LL_${DRV} INTERFACE IMPORTED)
             target_include_directories(HAL::STM32::${FAMILY}${CORE_C}::LL_${DRV} INTERFACE "${HAL_${FAMILY}${CORE_U}_INCLUDE}")
             target_sources(HAL::STM32::${FAMILY}${CORE_C}::LL_${DRV} INTERFACE "${HAL_${FAMILY}${CORE_U}_${DRV}_LL_SOURCE}")
+            list(APPEND HAL_EXPORTED_COMPONENTS LL_${DRV})
         endif()
     endforeach()
     
     set(HAL_${COMP}_FOUND TRUE)
     list(APPEND HAL_INCLUDE_DIRS "${HAL_${FAMILY}${CORE_U}_INCLUDE}")
     list(APPEND HAL_SOURCES "${HAL_${FAMILY}${CORE_U}_SOURCES}")
+endforeach()
+
+add_library(HAL::STM32::${FAMILY}${CORE_C}::ALL INTERFACE IMPORTED)
+
+foreach(COMP ${HAL_EXPORTED_COMPONENTS})
+    target_link_libraries(HAL::STM32::${FAMILY}${CORE_C}::ALL
+        INTERFACE HAL::STM32::${FAMILY}${CORE_C}::${COMP}
+    )
 endforeach()
 
 list(REMOVE_DUPLICATES HAL_INCLUDE_DIRS)
